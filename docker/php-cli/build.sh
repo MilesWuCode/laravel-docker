@@ -1,21 +1,23 @@
-docker rm -f app-fpm-local
+#!/usr/bin/env sh
 
-docker rmi app-fpm-local
+docker rm -f app-cli-local
+
+docker rmi app-cli-local
 
 docker build \
 --build-arg ENV_FILE=local.env \
--f ./docker/php-fpm/Dockerfile \
--t app-fpm-local:latest .
+-f ./docker/php-cli/Dockerfile \
+-t app-cli-local:latest .
 
 # amd64
 # --platform linux/amd64 \
 
-docker run --name app-fpm-local \
+docker run --name app-cli-local \
 -p 8000:8000 \
 -e APP_ENV=production \
 --restart unless-stopped \
 --network public-network \
--d app-fpm-local:latest
+-d app-cli-local:latest
 
 # check crontab
 # docker exec -it container crontab -l
