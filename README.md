@@ -41,3 +41,9 @@ sh docker/php-cli/build.sh
 # php-fpm
 sh docker/php-fpm/build.sh
 ```
+
+## Test
+
+Queue : app/Jobs/TestQueueJob.php
+
+Scheduler : routes/web.php
