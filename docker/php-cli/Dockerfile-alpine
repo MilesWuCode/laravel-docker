@@ -1,14 +1,13 @@
 FROM composer:2.8 AS vendor
 
-FROM php:8.4-cli-bookworm AS base
+FROM php:8.4-cli-alpine AS base
 
 ARG APP_ENV
 ARG WWWUSER=1000
 ARG WWWGROUP=1000
 ARG TZ=Asia/Taipei
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    TERM=xterm-color \
+ENV TERM=xterm-color \
     TZ=${TZ} \
     USER=laravel \
     APP_ENV=${APP_ENV} \
@@ -19,7 +18,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 WORKDIR ${ROOT}
 
 # 使用 bash 作為默認 shell 以便執行較新的指令
-SHELL ["/bin/bash", "-eou", "pipefail", "-c"]
+SHELL ["/bin/sh", "-eou", "pipefail", "-c"]
 
 # 設定時區
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
@@ -29,13 +28,13 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
 ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 #  安裝必要的套件
-RUN apt-get update; \
-    apt-get upgrade -yqq; \
-    apt-get install -yqq --no-install-recommends --show-progress \
-    apt-utils \
+RUN apk update; \
+    apk upgrade; \
+    apk add --no-cache \
     curl \
     wget \
     vim \
+    tzdata \
     git \
     # ncdu:這是一個磁碟使用分析工具。
     # ncdu \
@@ -45,8 +44,8 @@ RUN apt-get update; \
     ca-certificates \
     supervisor \
     libsodium-dev \
-    libbrotli-dev \
-    # 以下為使用 Install PHP extensions 所安裝的擴充套件
+    brotli \
+    # Install PHP extensions
     && install-php-extensions \
     bz2 \
     pcntl \
@@ -66,14 +65,12 @@ RUN apt-get update; \
     intl \
     gd \
     redis \
+    rdkafka \
     memcached \
     igbinary \
     # ldap \
-    && apt-get -y autoremove \
-    && apt-get clean \
     && docker-php-source delete \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && rm /var/log/lastlog /var/log/faillog
+    && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
 # 根據容器架構（armhf, aarch64, x86_64, x86）選擇對應的 supercronic 可執行檔名稱
 # 如果架構不被支援則停止建置並輸出錯誤
@@ -95,14 +92,14 @@ RUN arch="$(uname -m)" \
     && mkdir -p /etc/supercronic \
     && echo "*/1 * * * * php ${ROOT}/artisan schedule:run --no-interaction" > /etc/supercronic/laravel
 
-# 刪除預設的 www-data 使用者和群組，並創建新的使用者和群組
-RUN userdel --remove --force www-data \
-    && groupadd --force -g ${WWWGROUP} ${USER} \
-    && useradd -ms /bin/bash --no-log-init --no-user-group -g ${WWWGROUP} -u ${WWWUSER} ${USER}
+# 建立指定使用者和群組
+RUN addgroup -g ${WWWGROUP} ${USER} \
+    && adduser -D -h ${ROOT} -G ${USER} -u ${WWWUSER} -s /bin/sh ${USER}
 
-# 設定工作目錄權限
-RUN chown -R ${USER}:${USER} ${ROOT} /var/{log,run} \
-    && chmod -R a+rw ${ROOT} /var/{log,run}
+# 設定使用者和群組的權限
+RUN mkdir -p /var/log/supervisor /var/run/supervisor \
+    && chown -R ${USER}:${USER} ${ROOT} /var/log /var/run \
+    && chmod -R a+rw ${ROOT} /var/log /var/run
 
 # 複製 php.ini
 RUN cp ${PHP_INI_DIR}/php.ini-production ${PHP_INI_DIR}/php.ini

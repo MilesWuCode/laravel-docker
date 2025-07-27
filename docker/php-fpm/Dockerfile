@@ -178,7 +178,6 @@ RUN composer install \
     --no-ansi \
     --no-dev \
     && composer clear-cache
-###########################################
 
 # 設定 port
 EXPOSE 8000
