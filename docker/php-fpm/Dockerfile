@@ -128,7 +128,8 @@ COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/php.ini ${PHP_INI_DIR}/
 COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/start-container /usr/local/bin/start-container
 
 # 複製 nginx 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/default.conf /etc/nginx/sites-available/default
+
 
 # 啟動容器時執行的命令 權限設定
 RUN chmod +x /usr/local/bin/start-container

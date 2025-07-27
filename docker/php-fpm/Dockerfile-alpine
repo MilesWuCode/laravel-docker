@@ -1,6 +1,6 @@
 FROM composer:2.8 AS vendor
 
-FROM php:8.4-cli-alpine AS base
+FROM php:8.4-fpm-alpine AS base
 
 ARG APP_ENV
 ARG WWWUSER=1000
@@ -45,7 +45,8 @@ RUN apk update; \
     supervisor \
     libsodium-dev \
     brotli \
-    # Install PHP extensions
+    nginx \
+    # 以下為使用 Install PHP extensions 所安裝的擴充套件
     && install-php-extensions \
     bz2 \
     pcntl \
@@ -100,6 +101,10 @@ RUN mkdir -p /var/log/supervisor /var/run/supervisor \
     && chown -R ${USER}:${USER} ${ROOT} /var/log /var/run \
     && chmod -R a+rw ${ROOT} /var/log /var/run
 
+# 設定 Nginx 的工作目錄
+RUN mkdir -p /var/lib/nginx/body && \
+    chown -R ${USER}:${USER} /var/lib/nginx /run/nginx
+
 # 複製 php.ini
 RUN cp ${PHP_INI_DIR}/php.ini-production ${PHP_INI_DIR}/php.ini
 
@@ -110,13 +115,17 @@ USER ${USER}
 COPY --link --chown=${WWWUSER}:${WWWUSER} --from=vendor /usr/bin/composer /usr/bin/composer
 
 # 複製 supervisord 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # 客制化 php.ini 配置
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli/php.ini ${PHP_INI_DIR}/conf.d/app.ini
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/php.ini ${PHP_INI_DIR}/conf.d/app.ini
 
 # 複製 啟動容器時執行的命令
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli/start-container /usr/local/bin/start-container
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/start-container /usr/local/bin/start-container
+
+# 複製 nginx 配置檔案
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/nginx-alpine.conf /etc/nginx/nginx.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/default-alpine.conf /etc/nginx/http.d/default.conf
 
 # 啟動容器時執行的命令 權限設定
 RUN chmod +x /usr/local/bin/start-container
