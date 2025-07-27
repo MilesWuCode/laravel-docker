@@ -1,5 +1,9 @@
 # Laravel Docker - PHP-CLI / PHP-FPM
 
+This project's is heavily inspired by smortexa's work and laravel-octane-dockerfile contributors
+
+Reference: [laravel-octane-dockerfile](https://github.com/exaco/laravel-octane-dockerfile)
+
 ## Feature
 
 -   PHP-CLI / PHP-FPM
