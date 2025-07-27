@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     COMPOSER_FUND=0 \
     COMPOSER_MAX_PARALLEL_HTTP=24
 
-WORKDIR /var/www/html
+WORKDIR ${ROOT}
 
 # 使用 bash 作為默認 shell 以便執行較新的指令
 SHELL ["/bin/bash", "-eou", "pipefail", "-c"]
@@ -44,7 +44,6 @@ RUN apt-get update; \
     unzip \
     ca-certificates \
     supervisor \
-    cron \
     libsodium-dev \
     libbrotli-dev \
     nginx \
