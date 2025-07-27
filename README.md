@@ -1,5 +1,11 @@
 # Laravel Docker - PHP-CLI / PHP-FPM
 
+## Feature
+
+-   PHP-CLI / PHP-FPM
+-   Scheduler
+-   Queue
+
 ## Install
 
 -   Laravel Horizon
