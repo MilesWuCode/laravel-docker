@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+set -e
+
+php artisan storage:link
+php artisan optimize:clear
+php artisan optimize
+
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
