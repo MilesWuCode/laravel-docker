@@ -115,17 +115,17 @@ USER ${USER}
 COPY --link --chown=${WWWUSER}:${WWWUSER} --from=vendor /usr/bin/composer /usr/bin/composer
 
 # 複製 supervisord 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm-alpine/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # 客制化 php.ini 配置
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/php.ini ${PHP_INI_DIR}/conf.d/app.ini
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm-alpine/php.ini ${PHP_INI_DIR}/conf.d/app.ini
 
 # 複製 啟動容器時執行的命令
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/start-container /usr/local/bin/start-container
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm-alpine/start-container /usr/local/bin/start-container
 
 # 複製 nginx 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/nginx-alpine.conf /etc/nginx/nginx.conf
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/default-alpine.conf /etc/nginx/http.d/default.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm-alpine/nginx.conf /etc/nginx/nginx.conf
+COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm-alpine/default.conf /etc/nginx/http.d/default.conf
 
 # 啟動容器時執行的命令 權限設定
 RUN chmod +x /usr/local/bin/start-container

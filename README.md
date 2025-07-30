@@ -24,7 +24,7 @@ QUEUE_CONNECTION=redis
 REDIS_HOST=redis
 ```
 
-## Redis
+## Redis & Mailpit
 
 ```bash
 docker run --name redis \
@@ -32,6 +32,12 @@ docker run --name redis \
 --restart unless-stopped \
 --network public-network \
 -d redis:alpine
+
+docker run --name mailpit \
+-p 1025:1025 \
+-p 8025:8025 \
+--restart unless-stopped \
+-d axllent/mailpit:latest
 ```
 
 ## Run
@@ -39,11 +45,10 @@ docker run --name redis \
 ```bash
 docker network create public-network
 
-# php-cli
 sh docker/php-cli/build.sh
-
-# php-fpm
+sh docker/php-cli-alpine/build.sh
 sh docker/php-fpm/build.sh
+sh docker/php-fpm-alpine/build.sh
 ```
 
 ## Test
