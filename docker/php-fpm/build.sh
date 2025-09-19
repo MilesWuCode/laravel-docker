@@ -10,7 +10,11 @@ docker build \
 -t app-fpm-local:latest .
 
 # amd64
+# docker buildx build \
 # --platform linux/amd64 \
+# --build-arg ENV_FILE=local.env \
+# -f ./docker/php-fpm/Dockerfile \
+# -t app-fpm-local:latest .
 
 docker run --name app-fpm-local \
 -p 3000:8000 \

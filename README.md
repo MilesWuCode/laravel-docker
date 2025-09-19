@@ -43,8 +43,22 @@ docker run --name mailpit \
 ## Run
 
 ```bash
+# example sqlite
+touch database/database.sqlite
+
+cp envs/local.env .env
+
+php artisan k:g
+
+php artisan migrate
+
+# network for redis & mailpit
 docker network create public-network
 
+# need appkey
+envs/local.env
+
+# choice one
 sh docker/php-cli/build.sh
 sh docker/php-cli-alpine/build.sh
 sh docker/php-fpm/build.sh

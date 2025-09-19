@@ -10,7 +10,11 @@ docker build \
 -t app-cli-alpine-local:latest .
 
 # amd64
+# docker buildx build \
 # --platform linux/amd64 \
+# --build-arg ENV_FILE=local.env \
+# -f ./docker/php-cli-alpine/Dockerfile \
+# -t app-cli-alpine-local:latest .
 
 docker run --name app-cli-alpine-local \
 -p 8001:8000 \

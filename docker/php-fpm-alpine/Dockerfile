@@ -169,10 +169,8 @@ RUN mkdir -p \
     bootstrap/cache && chmod -R a+rw storage
 
 # 安裝套件
-RUN composer install \
+RUN composer dump-autoload \
     --classmap-authoritative \
-    --no-interaction \
-    --no-ansi \
     --no-dev \
     && composer clear-cache
 

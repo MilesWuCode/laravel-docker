@@ -73,8 +73,7 @@ RUN apt-get update; \
     && apt-get -y autoremove \
     && apt-get clean \
     && docker-php-source delete \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && rm /var/log/lastlog /var/log/faillog
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/lastlog /var/log/faillog
 
 # 根據容器架構（armhf, aarch64, x86_64, x86）選擇對應的 supercronic 可執行檔名稱
 # 如果架構不被支援則停止建置並輸出錯誤
@@ -173,10 +172,8 @@ RUN mkdir -p \
     bootstrap/cache && chmod -R a+rw storage
 
 # 安裝套件
-RUN composer install \
+RUN composer dump-autoload \
     --classmap-authoritative \
-    --no-interaction \
-    --no-ansi \
     --no-dev \
     && composer clear-cache
 

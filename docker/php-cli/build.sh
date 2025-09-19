@@ -10,7 +10,11 @@ docker build \
 -t app-cli-local:latest .
 
 # amd64
+# docker buildx build \
 # --platform linux/amd64 \
+# --build-arg ENV_FILE=local.env \
+# -f ./docker/php-cli/Dockerfile \
+# -t app-cli-local:latest .
 
 docker run --name app-cli-local \
 -p 8000:8000 \
