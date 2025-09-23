@@ -19,8 +19,8 @@ docker build \
 docker run --name app-cli-local \
 -p 8000:8000 \
 -e APP_ENV=production \
---restart unless-stopped \
 --network public-network \
+--restart unless-stopped \
 -d app-cli-local:latest
 
 # check crontab

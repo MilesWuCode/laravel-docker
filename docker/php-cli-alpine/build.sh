@@ -19,8 +19,8 @@ docker build \
 docker run --name app-cli-alpine-local \
 -p 8001:8000 \
 -e APP_ENV=production \
---restart unless-stopped \
 --network public-network \
+--restart unless-stopped \
 -d app-cli-alpine-local:latest
 
 # check crontab

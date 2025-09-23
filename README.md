@@ -29,15 +29,15 @@ REDIS_HOST=redis
 ```bash
 docker run --name redis \
 -p 6379:6379 \
---restart unless-stopped \
 --network public-network \
+--restart unless-stopped \
 -d redis:alpine
 
 docker run --name mailpit \
 -p 1025:1025 \
 -p 8025:8025 \
---restart unless-stopped \
 --network public-network \
+--restart unless-stopped \
 -d axllent/mailpit:latest
 ```
 
