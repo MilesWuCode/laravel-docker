@@ -37,6 +37,7 @@ docker run --name mailpit \
 -p 1025:1025 \
 -p 8025:8025 \
 --restart unless-stopped \
+--network public-network \
 -d axllent/mailpit:latest
 ```
 
