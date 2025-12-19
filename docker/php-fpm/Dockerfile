@@ -103,9 +103,17 @@ RUN userdel --remove --force www-data \
     && groupadd --force -g ${GROUP_ID} ${USER} \
     && useradd -ms /bin/bash --no-log-init --no-user-group -g ${GROUP_ID} -u ${USER_ID} ${USER}
 
-# 設定 Nginx 的工作目錄
-RUN mkdir -p /var/lib/nginx/body && \
-    chown -R ${USER}:${USER} /var/lib/nginx
+# 設定 Nginx 的工作目錄和日誌權限
+RUN mkdir -p /var/lib/nginx/body \
+    /var/log/nginx \
+    /var/run \
+    && chown -R ${USER}:${USER} /var/lib/nginx \
+    && chown -R ${USER}:${USER} /var/log/nginx \
+    && chown -R ${USER}:${USER} /var/run \
+    && touch /var/run/nginx.pid \
+    && chown ${USER}:${USER} /var/run/nginx.pid \
+    # 移除 nginx.conf 中的 user 指令（非 root 運行時會報錯）
+    && sed -i 's/^user .*/# user nginx;/' /etc/nginx/nginx.conf
 
 # 複製 php.ini
 RUN cp ${PHP_INI_DIR}/php.ini-production ${PHP_INI_DIR}/php.ini
