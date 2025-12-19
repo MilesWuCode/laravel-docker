@@ -36,11 +36,11 @@ RUN apk update; \
     wget \
     vim \
     tzdata \
+    unzip \
     # ncdu:這是一個磁碟使用分析工具。
     # ncdu \
     # procps:包含 ps, top 等進程管理工具。
     procps \
-    unzip \
     ca-certificates \
     supervisor \
     bash \

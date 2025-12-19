@@ -49,8 +49,11 @@ RUN apt-get update; \
     # procps:包含 ps, top 等進程管理工具。
     procps \
     ca-certificates \
+    bash \
     supervisor \
     libsodium-dev \
+    # bun:使用bun才打開
+    # && curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash \
     # fpm使用nginx
     nginx \
     # 以下為使用 Install PHP extensions 所安裝的擴充套件
@@ -98,10 +101,12 @@ RUN arch="$(uname -m)" \
     && mkdir -p /etc/supercronic \
     && echo "*/1 * * * * php ${ROOT}/artisan schedule:run --no-interaction" > /etc/supercronic/laravel
 
-# 刪除預設的 www-data 使用者和群組，並創建新的使用者和群組
-RUN userdel --remove --force www-data \
-    && groupadd --force -g ${GROUP_ID} ${USER} \
-    && useradd -ms /bin/bash --no-log-init --no-user-group -g ${GROUP_ID} -u ${USER_ID} ${USER}
+# 刪除預設的 www-data 使用者和群組
+RUN userdel --remove --force www-data
+
+# 建立指定使用者和群組
+RUN addgroup -g ${GROUP_ID} ${USER} \
+    && adduser -D -G ${USER} -u ${USER_ID} -s /bin/sh ${USER}
 
 # 設定 Nginx 的工作目錄和日誌權限
 RUN mkdir -p /var/lib/nginx/body \
