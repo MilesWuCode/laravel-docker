@@ -102,12 +102,10 @@ RUN addgroup -g ${GROUP_ID} ${USER} \
 # 設定 Nginx 的工作目錄和日誌權限
 RUN mkdir -p /var/lib/nginx/body \
     /var/log/nginx \
-    /var/run \
+    /run/nginx \
     && chown -R ${USER}:${USER} /var/lib/nginx \
     && chown -R ${USER}:${USER} /var/log/nginx \
-    && chown -R ${USER}:${USER} /var/run \
-    && touch /var/run/nginx.pid \
-    && chown ${USER}:${USER} /var/run/nginx.pid \
+    && chown -R ${USER}:${USER} /run/nginx \
     # 移除 nginx.conf 中的 user 指令（非 root 運行時會報錯）
     && sed -i 's/^user .*/# user nginx;/' /etc/nginx/nginx.conf
 
