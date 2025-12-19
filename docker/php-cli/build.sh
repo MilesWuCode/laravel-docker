@@ -20,7 +20,9 @@ docker run --name app-cli-local \
 -p 8000:8000 \
 -e APP_ENV=production \
 --network public-network \
---restart unless-stopped \
+--memory 800m \
+--memory-swap 800m \
+--restart always \
 -d app-cli-local:latest
 
 # check crontab

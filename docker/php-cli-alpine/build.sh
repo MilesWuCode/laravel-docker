@@ -20,7 +20,9 @@ docker run --name app-cli-alpine-local \
 -p 8001:8000 \
 -e APP_ENV=production \
 --network public-network \
---restart unless-stopped \
+--memory 800m \
+--memory-swap 800m \
+--restart always \
 -d app-cli-alpine-local:latest
 
 # check crontab

@@ -1,20 +1,26 @@
-FROM composer:2.8 AS vendor
+FROM composer:2.9 AS vendor
 
-FROM php:8.4-fpm-bookworm AS base
+FROM php:8.4-fpm-trixie AS base
 
 ARG APP_ENV
-ARG WWWUSER=1000
-ARG WWWGROUP=1000
+ARG USER_ID=1000
+ARG GROUP_ID=1000
 ARG TZ=Asia/Taipei
+ARG ENV_FILE
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-color \
     TZ=${TZ} \
     USER=laravel \
-    APP_ENV=${APP_ENV} \
     ROOT=/var/www/html \
+    APP_ENV=${APP_ENV} \
     COMPOSER_FUND=0 \
     COMPOSER_MAX_PARALLEL_HTTP=24
+
+# XDG 基礎目錄設定
+# - XDG_CONFIG_HOME: 設定檔位置（Composer、npm 等會用到）
+# - XDG_DATA_HOME: 應用程式資料位置
+ENV XDG_CONFIG_HOME=${ROOT}/.config XDG_DATA_HOME=${ROOT}/.data
 
 WORKDIR ${ROOT}
 
@@ -37,15 +43,15 @@ RUN apt-get update; \
     wget \
     vim \
     git \
+    unzip \
     # ncdu:這是一個磁碟使用分析工具。
     # ncdu \
     # procps:包含 ps, top 等進程管理工具。
     procps \
-    unzip \
     ca-certificates \
     supervisor \
     libsodium-dev \
-    libbrotli-dev \
+    # fpm使用nginx
     nginx \
     # 以下為使用 Install PHP extensions 所安裝的擴充套件
     && install-php-extensions \
@@ -54,8 +60,6 @@ RUN apt-get update; \
     mbstring \
     bcmath \
     sockets \
-    # pgsql:使用Postgres才打開
-    # pgsql \
     # pdo_pgsql:使用Postgres才打開
     # pdo_pgsql \
     opcache \
@@ -63,12 +67,11 @@ RUN apt-get update; \
     pdo_mysql \
     zip \
     uv \
-    vips \
     intl \
     gd \
     redis \
-    memcached \
-    igbinary \
+    # rdkafka \
+    # ffi \
     # ldap \
     && apt-get -y autoremove \
     && apt-get clean \
@@ -89,7 +92,7 @@ RUN arch="$(uname -m)" \
     x86) _cronic_fname='supercronic-linux-386' ;; \
     *) echo >&2 "error: unsupported architecture: $arch"; exit 1 ;; \
     esac \
-    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.34/${_cronic_fname}" \
+    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.41/${_cronic_fname}" \
     -O /usr/bin/supercronic \
     && chmod +x /usr/bin/supercronic \
     && mkdir -p /etc/supercronic \
@@ -97,12 +100,8 @@ RUN arch="$(uname -m)" \
 
 # 刪除預設的 www-data 使用者和群組，並創建新的使用者和群組
 RUN userdel --remove --force www-data \
-    && groupadd --force -g ${WWWGROUP} ${USER} \
-    && useradd -ms /bin/bash --no-log-init --no-user-group -g ${WWWGROUP} -u ${WWWUSER} ${USER}
-
-# 設定工作目錄權限
-RUN chown -R ${USER}:${USER} ${ROOT} /var/{log,run} \
-    && chmod -R a+rw ${ROOT} /var/{log,run}
+    && groupadd --force -g ${GROUP_ID} ${USER} \
+    && useradd -ms /bin/bash --no-log-init --no-user-group -g ${GROUP_ID} -u ${USER_ID} ${USER}
 
 # 設定 Nginx 的工作目錄
 RUN mkdir -p /var/lib/nginx/body && \
@@ -111,71 +110,56 @@ RUN mkdir -p /var/lib/nginx/body && \
 # 複製 php.ini
 RUN cp ${PHP_INI_DIR}/php.ini-production ${PHP_INI_DIR}/php.ini
 
-# 切換到指定使用者
-USER ${USER}
-
 # 複製 composer
-COPY --link --chown=${WWWUSER}:${WWWUSER} --from=vendor /usr/bin/composer /usr/bin/composer
+COPY --link --from=vendor /usr/bin/composer /usr/bin/composer
 
 # 複製 supervisord 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --link docker/php-fpm/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # 客制化 php.ini 配置
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/php.ini ${PHP_INI_DIR}/conf.d/app.ini
+COPY --link docker/php-fpm/php.ini ${PHP_INI_DIR}/conf.d/99-php.ini
 
 # 複製 啟動容器時執行的命令
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/start-container /usr/local/bin/start-container
+COPY --link docker/php-fpm/start-container /usr/local/bin/start-container
 
 # 複製 nginx 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-fpm/default.conf /etc/nginx/sites-available/default
+COPY --link docker/php-fpm/default.conf /etc/nginx/sites-available/default
 
+# 複製 composer.json, composer.lock
+COPY --link composer.* ./
 
-# 啟動容器時執行的命令 權限設定
-RUN chmod +x /usr/local/bin/start-container
-
-###########################################
-FROM base AS common
-
-USER ${USER}
-
-# 複製 Laravel 檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} . .
-
-# 安裝套件
+# 安裝 Composer 依賴套件（不含 autoloader，延後產生以便優化）
 RUN composer install \
     --no-dev \
     --no-interaction \
     --no-autoloader \
     --no-ansi \
     --no-scripts \
+    --no-progress \
     --audit
-###########################################
-FROM common AS runner
 
-ARG ENV_FILE
-
-USER ${USER}
-
-# 複製 Laravel 檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} . .
+# 複製全部檔案
+COPY --link . .
 
 # 複製環境變數檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} ./envs/${ENV_FILE} .env
+COPY --link ./envs/${ENV_FILE} .env
 
-# 授予 artisan 執行權限
-RUN chmod +x ${ROOT}/artisan
-
-# 設定 Laravel 資料夾的權限
+# 建立目錄權限
 RUN mkdir -p \
     storage/framework/{sessions,views,cache,testing} \
     storage/logs \
-    bootstrap/cache && chmod -R a+rw storage
+    bootstrap/cache \
+    && chown -R ${USER_ID}:${GROUP_ID} ${ROOT} \
+    && chmod +x /usr/local/bin/start-container
 
-# 安裝套件
+# 產生最佳化的 autoloader（使用 classmap 和 APCu 快取）
 RUN composer dump-autoload \
-    --classmap-authoritative \
-    --no-dev \
-    && composer clear-cache
+    --optimize \
+    --apcu \
+    --no-dev
+
+# 切換使用者
+USER ${USER}
 
 # 設定 port
 EXPOSE 8000

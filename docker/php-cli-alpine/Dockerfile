@@ -1,17 +1,18 @@
-FROM composer:2.8 AS vendor
+FROM composer:2.9 AS vendor
 
 FROM php:8.4-cli-alpine AS base
 
 ARG APP_ENV
-ARG WWWUSER=1000
-ARG WWWGROUP=1000
+ARG USER_ID=1000
+ARG GROUP_ID=1000
 ARG TZ=Asia/Taipei
+ARG ENV_FILE
 
 ENV TERM=xterm-color \
     TZ=${TZ} \
     USER=laravel \
-    APP_ENV=${APP_ENV} \
     ROOT=/var/www/html \
+    APP_ENV=${APP_ENV} \
     COMPOSER_FUND=0 \
     COMPOSER_MAX_PARALLEL_HTTP=24
 
@@ -35,7 +36,6 @@ RUN apk update; \
     wget \
     vim \
     tzdata \
-    git \
     # ncdu:這是一個磁碟使用分析工具。
     # ncdu \
     # procps:包含 ps, top 等進程管理工具。
@@ -43,17 +43,18 @@ RUN apk update; \
     unzip \
     ca-certificates \
     supervisor \
+    bash \
     libsodium-dev \
-    brotli \
+    # bun:使用bun才打開
+    # && curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr bash \
     # Install PHP extensions
     && install-php-extensions \
+    apcu \
     bz2 \
     pcntl \
     mbstring \
     bcmath \
     sockets \
-    # pgsql:使用Postgres才打開
-    # pgsql \
     # pdo_pgsql:使用Postgres才打開
     # pdo_pgsql \
     opcache \
@@ -61,12 +62,11 @@ RUN apk update; \
     pdo_mysql \
     zip \
     uv \
-    vips \
     intl \
     gd \
     redis \
-    memcached \
-    igbinary \
+    # rdkafka \
+    # ffi \
     # ldap \
     && docker-php-source delete \
     && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
@@ -77,7 +77,7 @@ RUN apk update; \
 # 接著建立 /etc/supercronic 資料夾，並新增一個排程檔 laravel
 # 內容是每分鐘執行一次 Laravel 的排程任務 (php artisan schedule:run --no-interaction)
 # supercronic 是輕量級的 cron 替代品，適合在容器中使用，因為它能處理 log 並維持前景執行（避免容器退出）
-RUN arch="$(uname -m)" \
+RUN arch="$(apk --print-arch)" \
     && case "$arch" in \
     armhf) _cronic_fname='supercronic-linux-arm' ;; \
     aarch64) _cronic_fname='supercronic-linux-arm64' ;; \
@@ -85,85 +85,69 @@ RUN arch="$(uname -m)" \
     x86) _cronic_fname='supercronic-linux-386' ;; \
     *) echo >&2 "error: unsupported architecture: $arch"; exit 1 ;; \
     esac \
-    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.34/${_cronic_fname}" \
+    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.41/${_cronic_fname}" \
     -O /usr/bin/supercronic \
     && chmod +x /usr/bin/supercronic \
     && mkdir -p /etc/supercronic \
     && echo "*/1 * * * * php ${ROOT}/artisan schedule:run --no-interaction" > /etc/supercronic/laravel
 
 # 建立指定使用者和群組
-RUN addgroup -g ${WWWGROUP} ${USER} \
-    && adduser -D -h ${ROOT} -G ${USER} -u ${WWWUSER} -s /bin/sh ${USER}
-
-# 設定使用者和群組的權限
-RUN mkdir -p /var/log/supervisor /var/run/supervisor \
-    && chown -R ${USER}:${USER} ${ROOT} /var/log /var/run \
-    && chmod -R a+rw ${ROOT} /var/log /var/run
+RUN addgroup -g ${GROUP_ID} ${USER} \
+    && adduser -D -G ${USER} -u ${USER_ID} -s /bin/sh ${USER}
 
 # 複製 php.ini
 RUN cp ${PHP_INI_DIR}/php.ini-production ${PHP_INI_DIR}/php.ini
 
-# 切換到指定使用者
-USER ${USER}
-
 # 複製 composer
-COPY --link --chown=${WWWUSER}:${WWWUSER} --from=vendor /usr/bin/composer /usr/bin/composer
+COPY --link --from=vendor /usr/bin/composer /usr/bin/composer
 
 # 複製 supervisord 配置檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli-alpine/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --link docker/php-cli-alpine/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # 客制化 php.ini 配置
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli-alpine/php.ini ${PHP_INI_DIR}/conf.d/app.ini
+COPY --link docker/php-cli-alpine/php.ini ${PHP_INI_DIR}/conf.d/99-php.ini
 
 # 複製 啟動容器時執行的命令
-COPY --link --chown=${WWWUSER}:${WWWUSER} docker/php-cli-alpine/start-container /usr/local/bin/start-container
+COPY --link docker/php-cli-alpine/start-container /usr/local/bin/start-container
 
-# 啟動容器時執行的命令 權限設定
-RUN chmod +x /usr/local/bin/start-container
+# 複製 composer.json, composer.lock
+COPY --link composer.* ./
 
-###########################################
-FROM base AS common
-
-USER ${USER}
-
-# 複製 Laravel 檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} . .
-
-# 安裝套件
+# 安裝 Composer 依賴套件（不含 autoloader，延後產生以便優化）
 RUN composer install \
     --no-dev \
     --no-interaction \
     --no-autoloader \
     --no-ansi \
     --no-scripts \
+    --no-progress \
     --audit
-###########################################
-FROM common AS runner
 
-ARG ENV_FILE
-
-USER ${USER}
-
-# 複製 Laravel 檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} . .
+# 複製全部檔案
+COPY --link . .
 
 # 複製環境變數檔案
-COPY --link --chown=${WWWUSER}:${WWWUSER} ./envs/${ENV_FILE} .env
+COPY --link ./envs/${ENV_FILE} .env
 
-# 授予 artisan 執行權限
-RUN chmod +x ${ROOT}/artisan
-
-# 設定 Laravel 資料夾的權限
+# 建立目錄權限
 RUN mkdir -p \
-    storage/framework/{sessions,views,cache,testing} \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache \
+    storage/framework/testing \
     storage/logs \
-    bootstrap/cache && chmod -R a+rw storage
+    bootstrap/cache \
+    && chown -R ${USER_ID}:${GROUP_ID} ${ROOT} \
+    && chmod +x /usr/local/bin/start-container
 
-# 安裝套件
+# 產生最佳化的 autoloader（使用 classmap 和 APCu 快取）
 RUN composer dump-autoload \
-    --classmap-authoritative \
-    --no-dev \
-    && composer clear-cache
+    --optimize \
+    --apcu \
+    --no-dev
+
+# 切換使用者
+USER ${USER}
 
 # 設定 port
 EXPOSE 8000
