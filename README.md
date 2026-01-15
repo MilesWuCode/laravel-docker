@@ -72,8 +72,6 @@ Queue : app/Jobs/TestQueueJob.php
 
 Scheduler : routes/web.php
 
-## Test
-
 ```php
 // send test mail use tinker
 Mail::raw('This is a test mail', function ($message) {
