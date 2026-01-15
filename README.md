@@ -71,3 +71,14 @@ sh docker/php-fpm-alpine/build.sh
 Queue : app/Jobs/TestQueueJob.php
 
 Scheduler : routes/web.php
+
+## Test
+
+```php
+// send test mail use tinker
+Mail::raw('This is a test mail', function ($message) {
+    $message->subject('Test');
+    $message->from('laravel@example.com', 'Laravel');
+    $message->to('user@example.com');
+});
+```
