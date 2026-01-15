@@ -27,6 +27,9 @@ REDIS_HOST=redis
 ## Redis & Mailpit
 
 ```bash
+# network for redis & mailpit
+docker network create public-network
+
 docker run --name redis \
 -p 6379:6379 \
 --network public-network \
@@ -52,9 +55,6 @@ cp envs/local.env .env
 php artisan k:g
 
 php artisan migrate
-
-# network for redis & mailpit
-docker network create public-network
 
 # need appkey
 envs/local.env
