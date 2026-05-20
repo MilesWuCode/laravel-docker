@@ -107,8 +107,8 @@ RUN arch="$(uname -m)" \
 RUN userdel --remove --force www-data
 
 # 建立指定使用者和群組
-RUN addgroup -g ${GROUP_ID} ${USER} \
-    && adduser -D -G ${USER} -u ${USER_ID} -s /bin/sh ${USER}
+RUN groupadd --force -g ${GROUP_ID} ${USER} \
+    && useradd -ms /bin/bash --no-log-init --no-user-group -g ${GROUP_ID} -u ${USER_ID} ${USER}
 
 # 設定 Nginx 的工作目錄和日誌權限
 RUN mkdir -p /var/lib/nginx/body \
