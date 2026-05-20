@@ -18,7 +18,7 @@ docker build \
 
 docker run --name app-cli-local \
 -p 8000:8000 \
--e APP_ENV=production \
+-e APP_ENV=local \
 --network public-network \
 --memory 800m \
 --memory-swap 800m \

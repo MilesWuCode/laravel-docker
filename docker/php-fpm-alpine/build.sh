@@ -18,7 +18,7 @@ docker buildx build \
 
 docker run --name app-fpm-alpine-local \
 -p 3001:8000 \
--e APP_ENV=production \
+-e APP_ENV=local \
 --network public-network \
 --restart unless-stopped \
 -d app-fpm-alpine-local:latest
