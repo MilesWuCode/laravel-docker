@@ -11,9 +11,11 @@ ARG ENV_FILE
 ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-color \
     TZ=${TZ} \
+    LANG=C.UTF-8 \
     USER=laravel \
     ROOT=/var/www/html \
     APP_ENV=${APP_ENV} \
+    COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_FUND=0 \
     COMPOSER_MAX_PARALLEL_HTTP=24
 
@@ -140,7 +142,6 @@ RUN mkdir -p \
     storage/framework/{sessions,views,cache,testing} \
     storage/logs \
     bootstrap/cache \
-    && chown -R ${USER_ID}:${GROUP_ID} ${ROOT} \
     && chmod +x /usr/local/bin/start-container
 
 # 產生最佳化的 autoloader（使用 classmap 和 APCu 快取）
@@ -148,6 +149,10 @@ RUN composer dump-autoload \
     --optimize \
     --apcu \
     --no-dev
+
+# 設定目錄擁有者，並移除所有 SUID/SGID bit 以防止提權攻擊
+RUN chown -R ${USER_ID}:${GROUP_ID} ${ROOT} \
+    && find / -perm /6000 -type f -exec chmod a-s {} + 2>/dev/null || true
 
 # 切換使用者
 USER ${USER}
