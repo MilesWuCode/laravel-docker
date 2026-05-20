@@ -10,11 +10,11 @@ docker build \
 -t app-fpm-alpine-local:latest .
 
 # amd64
-docker buildx build \
---platform linux/amd64 \
---build-arg ENV_FILE=local.env \
--f ./docker/php-fpm-alpine/Dockerfile \
--t app-fpm-alpine-local:latest .
+# docker buildx build \
+# --platform linux/amd64 \
+# --build-arg ENV_FILE=local.env \
+# -f ./docker/php-fpm-alpine/Dockerfile \
+# -t app-fpm-alpine-local:latest .
 
 docker run --name app-fpm-alpine-local \
 -p 3001:8000 \
