@@ -1,3 +1,3 @@
 https://github.com/aptible/supercronic
 
-v0.2.41
+v0.2.45

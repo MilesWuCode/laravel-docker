@@ -1,6 +1,6 @@
 FROM composer:2.9 AS vendor
 
-FROM php:8.4-cli-alpine AS base
+FROM php:8.5-cli-alpine AS base
 
 ARG APP_ENV
 ARG USER_ID=1000
@@ -87,7 +87,7 @@ RUN arch="$(apk --print-arch)" \
     x86) _cronic_fname='supercronic-linux-386' ;; \
     *) echo >&2 "error: unsupported architecture: $arch"; exit 1 ;; \
     esac \
-    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.41/${_cronic_fname}" \
+    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.45/${_cronic_fname}" \
     -O /usr/bin/supercronic \
     && chmod +x /usr/bin/supercronic \
     && mkdir -p /etc/supercronic \
