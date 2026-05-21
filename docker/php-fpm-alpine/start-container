@@ -3,7 +3,7 @@
 set -e
 
 # /tmp 可能在 runtime 被重置（tmpfs mount），每次啟動重建以確保 opcache file cache 目錄存在
-mkdir -p /tmp/opcache-file-cache && chmod 700 /tmp/opcache-file-cache
+mkdir -p -m 700 /tmp/opcache-file-cache
 
 php artisan storage:link
 php artisan optimize:clear
