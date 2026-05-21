@@ -121,6 +121,10 @@ COPY --link docker/php-cli/start-container /usr/local/bin/start-container
 # 複製 composer.json, composer.lock
 COPY --link composer.* ./
 
+# opcache.enable_cli=1 使得 PHP CLI（composer）在 build 時就初始化 opcache，
+# 而 apk 安裝步驟已 rm -rf /tmp/*，因此需在 composer install 前重建目錄
+RUN mkdir -p /tmp/opcache-file-cache && chmod 700 /tmp/opcache-file-cache
+
 # 安裝 Composer 依賴套件（不含 autoloader，延後產生以便優化）
 RUN composer install \
     --no-dev \
