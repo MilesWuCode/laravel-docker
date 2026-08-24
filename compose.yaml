@@ -1,0 +1,48 @@
+services:
+    php:
+        image: serversideup/php:8.5-fpm-nginx
+        ports:
+            - "80:8080"
+            - "443:8443"
+        volumes:
+            - .:/var/www/html
+        environment:
+            REDIS_HOST: redis
+            PHP_OPCACHE_ENABLE: "1"
+        depends_on:
+            - task
+            - horizon
+        networks:
+            - default
+            - public-network
+
+    task:
+        image: serversideup/php:8.5-fpm-nginx
+        command: ["php", "/var/www/html/artisan", "schedule:work"]
+        stop_signal: SIGTERM
+        volumes:
+            - .:/var/www/html
+        environment:
+            REDIS_HOST: redis
+        healthcheck:
+            test: ["CMD", "healthcheck-schedule"]
+            start_period: 10s
+
+    horizon:
+        image: serversideup/php:8.5-fpm-nginx
+        command: ["php", "/var/www/html/artisan", "horizon"]
+        stop_signal: SIGTERM
+        volumes:
+            - .:/var/www/html
+        environment:
+            REDIS_HOST: redis
+        healthcheck:
+            test: ["CMD", "healthcheck-horizon"]
+            start_period: 10s
+        networks:
+            - default
+            - public-network
+
+networks:
+    public-network:
+        external: true
