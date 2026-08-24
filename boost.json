@@ -1,7 +1,7 @@
 {
     "agents": [
         "claude_code",
-        "gemini"
+        "antigravity"
     ],
     "cloud": false,
     "guidelines": true,
@@ -9,8 +9,10 @@
     "nightwatch": false,
     "sail": false,
     "skills": [
+        "infer-conventions",
         "laravel-best-practices",
         "configuring-horizon",
-        "pest-testing"
+        "pest-testing",
+        "tailwindcss-development"
     ]
 }
