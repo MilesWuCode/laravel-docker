@@ -12,6 +12,7 @@
         "infer-conventions",
         "laravel-best-practices",
         "configuring-horizon",
+        "octane-development",
         "pest-testing",
         "tailwindcss-development"
     ]

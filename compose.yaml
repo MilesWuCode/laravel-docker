@@ -1,6 +1,6 @@
 services:
     php:
-        image: serversideup/php:8.5-fpm-nginx
+        image: serversideup/php:8.5-frankenphp
         ports:
             - "80:8080"
             - "443:8443"
@@ -9,6 +9,21 @@ services:
         environment:
             REDIS_HOST: redis
             PHP_OPCACHE_ENABLE: "1"
+            # Use Laravel's built-in health check
+            HEALTHCHECK_PATH: /up
+        # Start Octane in worker mode
+        command:
+            [
+                "php",
+                "artisan",
+                "octane:start",
+                "--server=frankenphp",
+                "--port=8080",
+            ]
+        # Set healthcheck to use our native healthcheck script for Octane
+        healthcheck:
+            test: ["CMD", "healthcheck-octane"]
+            start_period: 10s
         depends_on:
             - task
             - horizon
@@ -17,7 +32,7 @@ services:
             - public-network
 
     task:
-        image: serversideup/php:8.5-fpm-nginx
+        image: serversideup/php:8.5-frankenphp
         command: ["php", "/var/www/html/artisan", "schedule:work"]
         stop_signal: SIGTERM
         volumes:
@@ -29,7 +44,7 @@ services:
             start_period: 10s
 
     horizon:
-        image: serversideup/php:8.5-fpm-nginx
+        image: serversideup/php:8.5-frankenphp
         command: ["php", "/var/www/html/artisan", "horizon"]
         stop_signal: SIGTERM
         volumes:
